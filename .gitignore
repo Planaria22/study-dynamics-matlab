@@ -1,0 +1,8 @@
+# MATLAB / Simulink
+*.asv
+slprj/
+*.slxc
+
+# OS
+Thumbs.db
+.DS_Store
