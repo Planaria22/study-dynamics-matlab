@@ -1,4 +1,4 @@
-% setupRLCPaths  RLC 教材用の simulink-utils を MATLAB パスに追加する
+% setupRLCPaths  RLC 教材用の simulink-utils / plot-utils を MATLAB パスに追加する
 %
 % Live Script は一時フォルダから実行されるため、mfilename ではなく
 % which('RLC_Modeling_Lecture') で保存先のパスを特定する。
@@ -27,9 +27,15 @@ if isempty(lectureFile)
 end
 
 utilsDir = fullfile(fileparts(lectureFile), 'simulink-utils');
+plotDir = fullfile(fileparts(lectureFile), 'plot-utils');
 if ~exist(utilsDir, 'dir')
     error('RLC_Modeling:UtilsNotFound', ...
         'simulink-utils フォルダが見つかりません: %s', utilsDir);
 end
+if ~exist(plotDir, 'dir')
+    error('RLC_Modeling:PlotUtilsNotFound', ...
+        'plot-utils フォルダが見つかりません: %s', plotDir);
+end
 
 addpath(utilsDir);
+addpath(plotDir);

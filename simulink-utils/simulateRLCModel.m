@@ -1,14 +1,15 @@
-function [t, i, ok] = simulateRLCModel(modelName, stopTime)
-% simulateRLCModel  RLC Simulink モデルを実行し電流 i(t) の時系列を取得する
+function [t, v, i, ok] = simulateRLCModel(modelName, stopTime)
+% simulateRLCModel  RLC Simulink モデルを実行し入力電圧・電流の時系列を取得する
 %
-%   [t, i, ok] = simulateRLCModel(modelName, stopTime)
+%   [t, v, i, ok] = simulateRLCModel(modelName, stopTime)
 %
 %   modelName : Simulink モデル名（例: 'RLC_Model'）
 %   stopTime  : シミュレーション終了時間 [s]
-%   t, i      : 時間ベクトルと電流ベクトル（失敗時は空）
+%   t, v, i   : 時間・入力電圧・電流ベクトル（失敗時は空）
 %   ok        : 成功時 true
 
 t = [];
+v = [];
 i = [];
 ok = false;
 
@@ -23,8 +24,12 @@ end
 try
     simOut = sim(modelName, 'StopTime', num2str(stopTime));
     t = extractSimTime(simOut);
-    i = extractSimCurrent(simOut);
-    [t, i] = alignSeries(t, i);
+    i = extractSimSignal(simOut, {'i_sim', 'i_data'});
+    v = extractSimSignal(simOut, {'v_sim', 'v_data'});
+    if isempty(v) && ~isempty(t)
+        v = fallbackStepVoltage(t);
+    end
+    [t, v, i] = alignSeries(t, v, i);
     ok = true;
 catch ME
     reportSimError(modelName, ME);
@@ -45,39 +50,54 @@ end
 t = unpackSeries(t);
 end
 
-function i = extractSimCurrent(simOut)
-i = [];
-if isprop(simOut, 'i_sim') && ~isempty(simOut.i_sim)
-    i = simOut.i_sim;
-elseif isa(simOut, 'Simulink.SimulationOutput')
-    try
-        i = simOut.get('i_sim');
-    catch
+function y = extractSimSignal(simOut, names)
+y = [];
+for k = 1:numel(names)
+    name = names{k};
+    if isprop(simOut, name) && ~isempty(simOut.(name))
+        y = simOut.(name);
+        break;
     end
-end
-if isempty(i) && isprop(simOut, 'i_data') && ~isempty(simOut.i_data)
-    i = simOut.i_data;
-elseif isempty(i) && evalin('base', 'exist(''i_sim'',''var'')')
-    i = evalin('base', 'i_sim');
-elseif isempty(i) && evalin('base', 'exist(''i_data'',''var'')')
-    i = evalin('base', 'i_data');
-end
-if isempty(i) && isprop(simOut, 'logsout') && ~isempty(simOut.logsout)
-  try
-    elem = simOut.logsout.getElement('i_sim');
-    if isempty(elem) && simOut.logsout.numElements >= 1
-        elem = simOut.logsout.getElement(1);
-    end
-    if ~isempty(elem)
-        ts = elem.Values;
-        if isa(ts, 'timeseries')
-            i = ts.Data;
+    if isa(simOut, 'Simulink.SimulationOutput')
+        try
+            y = simOut.get(name);
+            if ~isempty(y)
+                break;
+            end
+        catch
         end
     end
-  catch
-  end
+    if isempty(y) && evalin('base', sprintf('exist(''%s'',''var'')', name))
+        y = evalin('base', name);
+        break;
+    end
 end
-i = unpackSeries(i);
+if isempty(y) && isprop(simOut, 'logsout') && ~isempty(simOut.logsout)
+    for k = 1:numel(names)
+        try
+            elem = simOut.logsout.getElement(names{k});
+            if ~isempty(elem)
+                ts = elem.Values;
+                if isa(ts, 'timeseries')
+                    y = ts.Data;
+                    break;
+                end
+            end
+        catch
+        end
+    end
+end
+y = unpackSeries(y);
+end
+
+function v = fallbackStepVoltage(t)
+v = [];
+if evalin('base', 'exist(''V0'',''var'')')
+    V0 = evalin('base', 'V0');
+    v = V0 * (t >= 0);
+    warning('Simulink:VoltageFallback', ...
+        'v_sim が見つかりませんでした。ワークスペースの V0 からステップ電圧を再構成しました。Step → To Workspace（v_sim）の設定を推奨します。');
+end
 end
 
 function y = unpackSeries(x)
@@ -93,13 +113,18 @@ end
 y = squeeze(y(:));
 end
 
-function [t, i] = alignSeries(t, i)
+function [t, v, i] = alignSeries(t, v, i)
 if isempty(i) || isempty(t)
     error('RLC_Modeling:OutputMissing', ...
         '電流 i_sim（または i_data）がワークスペースに出力されていません。');
 end
-n = min(numel(t), numel(i));
+if isempty(v)
+    error('RLC_Modeling:OutputMissing', ...
+        '入力電圧 v_sim が見つかりません。Step 出力 → To Workspace（v_sim）を設定するか、3.1 節で V0 を定義してください。');
+end
+n = min([numel(t), numel(v), numel(i)]);
 t = t(1:n);
+v = v(1:n);
 i = i(1:n);
 end
 
@@ -108,8 +133,8 @@ if strcmp(ME.identifier, 'RLC_Modeling:OutputMissing')
     warning('Simulink:OutputMissing', ...
         ['モデル "%s" は実行されましたが、結果の読み取りに失敗しました。\n' ...
          '  原因: %s\n' ...
-         '  対処: Integrator（i）→ To Workspace、Variable name = i_sim、Save format = Array。\n' ...
-         '        Model Settings > Data Import/Export で Time にチェック（tout）。'], ...
+         '  対処: Step（入力電圧）→ To Workspace（v_sim）、Integrator（i）→ To Workspace（i_sim）。\n' ...
+         '        Save format = Array。Model Settings で Time にチェック（tout）。'], ...
         modelName, ME.message);
 else
     warning('Simulink:SimFailed', ...
