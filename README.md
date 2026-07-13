@@ -86,23 +86,45 @@ ver
 
 ## GitHub から教材を取得する
 
-### 方法A：ZIP でダウンロード（Git 未経験者向け）
+本教材は GitHub 上で配布しています。**Git 未経験の方は方法A（ZIP）**、**Git / GitHub に慣れている方は方法B（Fork）** を利用してください。方法B では教員リポジトリへの直接 clone は行わず、必ず Fork してから自分の Fork 先を clone します（[kosen-motor-drive-intro](https://github.com/enotyama19xx/kosen-motor-drive-intro) の運用と同様）。
 
-1. 本リポジトリの GitHub ページをブラウザで開く
+教員リポジトリ（Fork 元）：  
+[https://github.com/enotyama19xx/study-dynamics-matlab](https://github.com/enotyama19xx/study-dynamics-matlab)
+
+### 方法A：ZIP でダウンロード（基本）
+
+1. [教員リポジトリ](https://github.com/enotyama19xx/study-dynamics-matlab) をブラウザで開く
 2. 右上の **Code（コード）** → **Download ZIP** をクリックする
 3. ダウンロードした ZIP を解凍する（例：`C:\Users\<ユーザー名>\Documents\study-dynamics-matlab`）
+4. 教材に更新がある場合は、ZIP を再ダウンロードして解凍し直す
 
-### 方法B：Git でクローン（推奨）
+### 方法B：Fork して clone（Git 利用者向け・推奨）
 
-[Git for Windows](https://gitforwindows.org/) をインストール済みの場合：
+[Git for Windows](https://gitforwindows.org/) と [GitHub](https://github.com/) アカウントを用意したうえで、次の手順で取得します。**教員リポジトリへの直接 clone は行わないでください。**
+
+#### 初回：Fork と clone
+
+1. [教員リポジトリ](https://github.com/enotyama19xx/study-dynamics-matlab) を開き、右上 **Fork** から自分のアカウントに Fork を作成する
+2. **自分の Fork 先** の URL で clone する
 
 ```powershell
 cd C:\Users\<ユーザー名>\Documents
-git clone https://github.com/<組織名>/<リポジトリ名>.git
-cd <リポジトリ名>
+git clone https://github.com/<自分のユーザー名>/study-dynamics-matlab.git
+cd study-dynamics-matlab
 ```
 
-> `<組織名>` / `<リポジトリ名>` は、担当教員から案内された URL に置き換えてください。
+> Fork してから clone すると、演習で編集した内容を自分のリポジトリへ Push でき、他の学生と干渉しません。
+
+#### 教材が更新されたとき：Sync fork → pull
+
+1. GitHub 上で自分の Fork 先を開き、**Sync fork** → **Update branch** を実行する
+2. 手元の PC で以下を実行する
+
+```powershell
+git pull origin main
+```
+
+> **Sync fork と pull はセットで実行** してください。どちらか一方だけでは最新の教材が手元に反映されません。
 
 ---
 
