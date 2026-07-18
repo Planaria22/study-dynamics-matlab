@@ -38,18 +38,10 @@ if ~isempty(lectureFile)
 else
     run('setupRLCPaths.m');
 end
-<<<<<<< HEAD
-plotStepResponse(t_R, v_R, i_R, 'R回路：ステップ応答', ... %[output:group:1aa9974c] %[output:5898ce30]
-    'R回路：ステップ応答（入力と出力の比較）', ... %[output:5898ce30]
-    sprintf('入力：ステップ電圧 (V_0=%g V)', V0_R), ... %[output:5898ce30]
-    sprintf('出力：電流 (R=%g \\Omega)', R_R)); %[output:group:1aa9974c] %[output:5898ce30]
-%%
-=======
 plotStepResponse(t_R, v_R, i_R, 'R回路：ステップ応答', ... %[output:group:2fd22ead] %[output:0009afbc]
     'R回路：ステップ応答（入力と出力の比較）', ... %[output:0009afbc]
     sprintf('入力：ステップ電圧 (V_0=%g V)', V0_R), ... %[output:0009afbc]
     sprintf('出力：電流 (R=%g \\Omega)', R_R)); %[output:group:2fd22ead] %[output:0009afbc]
->>>>>>> adafe6816883d6e9759f305c5418df126c43d541
 %[text] ### 2.2 L回路（インダクタのみ）
 %[text] ![](text:image:4dad)
 %[text] インダクタ $L$ \[H\] の電圧–電流関係：
